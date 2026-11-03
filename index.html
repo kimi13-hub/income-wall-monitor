@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>【モニター版】年収の壁シミュレーター</title>
+    <meta name="description" content="家族構成と収入から、年収の壁（106万・130万円など）と働き損を試算。世帯の手取り・税金・社会保険料を計算します。" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./icon-512.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Shippori+Mincho+B1:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" />
+    <script>
+      // 配色はライト（ラベンダー）のみ
+      document.documentElement.dataset.theme = 'light';
+      document.documentElement.dataset.accent = 'lavender';
+    </script>
+    <script type="module" crossorigin src="./assets/index-BuAs-Pfi.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-6T7Zl7xY.css">
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap-wide top-inner">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 20h18M5 20V10m5 10V6m5 14v-8m5 8V4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <div>
+            <h1>年収の壁シミュレーター <select id="taxYear" class="tag year-select" aria-label="計算する年分"></select></h1>
+            <p class="sub">世帯の手取りが最大になる働き方を試算する参考ツール</p>
+          </div>
+        </div>
+        <div class="top-right"><button type="button" class="top-alert" id="topAlert" data-goto="track" hidden></button><div class="top-net" id="topNet" aria-live="polite"></div></div>
+      </div>
+    </header>
+
+    <div class="wrap-wide app">
+      <nav class="side-nav" id="sideNav" aria-label="メニュー">
+        <p class="nav-group">入力</p>
+        <button type="button" data-page="family"><i>◎</i>家族・収入</button>
+        <button type="button" data-page="settings"><i>⚙</i>地域・設定</button>
+        <p class="nav-group">結果</p>
+        <button type="button" data-page="summary"><i>¥</i>結果</button>
+        <button type="button" data-page="wall"><i>↗</i>壁の試算</button>
+        <button type="button" data-page="track"><i>✎</i>収入記録<em class="nav-alert" id="trackBadge" hidden></em></button>
+        <button type="button" data-page="split"><i>⇄</i>夫婦の配分</button>
+        <button type="button" data-page="tax"><i>％</i>節税・申告</button>
+      </nav>
+      <main class="pages" id="pages">
+        <section class="card" data-page="summary">
+          <h2><span class="step">A</span>現在の世帯の手取り</h2>
+          <div id="summaryAlert"></div>
+          <div id="summary"></div>
+          <div class="feature-links">
+            <button type="button" data-goto="family"><b>家族・収入</b><span>家族構成と、それぞれの給与・年金などを入力</span></button>
+            <button type="button" data-goto="wall"><b>壁の試算</b><span>年収を動かしたときの手取りと、生涯の損得（年金込み）</span></button>
+            <button type="button" data-goto="track"><b>収入記録</b><span>毎月の給与から年末を予測。壁まであと何時間働けるか</span></button>
+            <button type="button" data-goto="split"><b>夫婦の配分</b><span>2人でどう稼ぎを増やすと手取りが最大になるか</span></button>
+            <button type="button" data-goto="tax"><b>節税・申告</b><span>ふるさと納税・iDeCoの目安と申告書の参考様式</span></button>
+          </div>
+        </section>
+        <section class="card" data-page="wall">
+          <h2><span class="step">B</span>年収の壁シミュレーション</h2>
+          <div class="row controls">
+            <label><span class="lbl">年収を動かす人<span class="tip" tabindex="0" role="button" aria-label="説明" data-tip="年収を0円から上限まで動かしてシミュレーションする人です。ほかの家族の年収は今の入力のままです。">?</span></span><select id="target"></select></label>
+            <label><span class="lbl">グラフの上限<span class="tip" tabindex="0" role="button" aria-label="説明" data-tip="50万〜3,000万円の間で、好きな金額を入力できます。上限が大きいほど計算の刻みが粗くなります。">?</span></span><span class="unit-input"><input type="text" inputmode="decimal" class="money" id="range" autocomplete="off" aria-label="グラフの上限（万円）"><em>万円</em></span></label>
+          </div>
+          <div class="chips" id="rangeChips" aria-label="よく使う上限"></div>
+          <div id="chart"></div>
+          <div id="walls"></div>
+          <details class="more">
+            <summary>年収ごとの比較表を見る</summary>
+            <div id="compare"></div>
+          </details>
+        </section>
+        <section class="card" data-page="wall">
+          <h2><span class="step">C</span>生涯で見た損得（年金込み）</h2>
+          <p class="hint">勤務先の社会保険に入ると、毎年の手取りは減ることがありますが、将来の厚生年金が増えます。壁の手前に抑えた場合と比べて、生涯でどちらが得かの目安です。</p>
+          <div class="row controls">
+            <label><span class="lbl">対象の人</span><select id="lifeTarget"></select></label>
+            <label><span class="lbl">壁の手前（比べる元）</span><span class="unit-input"><input type="text" inputmode="decimal" class="money" id="lifeBase" autocomplete="off" placeholder="自動"><em>万円</em></span></label>
+            <label><span class="lbl">社保に入った年収</span><span class="unit-input"><input type="text" inputmode="decimal" class="money" id="lifeX" autocomplete="off" placeholder="自動"><em>万円</em></span></label>
+          </div>
+          <div class="row controls">
+            <label><span class="lbl">この働き方を続ける年数</span><span class="unit-input"><input type="text" inputmode="numeric" class="money" id="lifeWork" autocomplete="off"><em>年</em></span></label>
+            <label><span class="lbl">年金を受け取る年数<span class="tip" tabindex="0" role="button" aria-label="説明" data-tip="65歳から受け取り始めるとして、何年受け取るかです。65歳の平均余命は女性で約24年、男性で約20年です。">?</span></span><span class="unit-input"><input type="text" inputmode="numeric" class="money" id="lifeRecv" autocomplete="off"><em>年</em></span></label>
+          </div>
+          <div id="life"></div>
+        </section>
+        <section class="card" data-page="track">
+          <h2><span class="step">D</span>今年の収入記録・壁アラート</h2>
+          <p class="hint">毎月の給与（額面）を記録すると、年末の見込み年収と「壁まであと何円・何時間働けるか」がわかります。記録していない月は、家族の欄で入力した給与（予定）で見込みます。</p>
+          <div id="trackAlert"></div>
+          <div class="row controls">
+            <label><span class="lbl">記録する人</span><select id="trackTarget"></select></label>
+            <label><span class="lbl">時給<span class="tip" tabindex="0" role="button" aria-label="説明" data-tip="入れると「あと何時間働けるか」を表示します。0円なら金額だけ表示します。">?</span></span><span class="unit-input"><input type="text" inputmode="decimal" class="money" id="hourly" autocomplete="off" aria-label="時給"><em>円</em></span></label>
+          </div>
+          <div class="months track-months" id="trackMonths"></div>
+          <div id="trackResult"></div>
+        </section>
+        <section class="card" data-page="split">
+          <h2><span class="step">E</span>夫婦の働き方（増やす額の配分）</h2>
+          <p class="hint">2人の年収を合計でいくら増やすとき、どちらに何万円ずつ振り分けると世帯の手取りがいちばん多くなるかを計算します。</p>
+          <div class="row controls">
+            <label><span class="lbl">1人目</span><select id="splitA"></select></label>
+            <label><span class="lbl">2人目</span><select id="splitB"></select></label>
+            <label><span class="lbl">2人で増やす年収</span><span class="unit-input"><input type="text" inputmode="decimal" class="money" id="splitExtra" autocomplete="off" aria-label="2人で増やす年収（万円）"><em>万円</em></span></label>
+          </div>
+          <div id="split"></div>
+        </section>
+        <section class="card" data-page="tax">
+          <h2><span class="step">F</span>節税（ふるさと納税・iDeCo）</h2>
+          <div id="saving"></div>
+        </section>
+        <section class="card" data-page="tax">
+          <h2><span class="step">G</span>申告書の参考様式（年末調整・確定申告）</h2>
+          <div id="reports"></div>
+        </section>
+        <section class="card" data-page="family">
+          <div class="card-head">
+            <h2><span class="step">01</span>家族構成と収入</h2>
+            <div class="btns add-btns">
+              <button data-add="spouse">＋配偶者</button>
+              <button data-add="child">＋子</button>
+              <button data-add="parent">＋親</button>
+              <button data-add="other">＋その他</button>
+              <button type="button" class="ghost" id="foldAll">すべて折りたたむ</button>
+            </div>
+          </div>
+          <p class="hint">給与は「年収で入力」か「月ごとに入力（賞与・交通費の支給月も反映）」を選べます。家族手当は各人の欄で入力します。</p>
+          <div id="members"></div>
+        </section>
+        <section class="card" data-page="settings">
+          <h2><span class="step">02</span>お住まいの地域</h2>
+          <div id="region"></div>
+        </section>
+        <section class="card" data-page="settings">
+          <details id="settingsDetails">
+            <summary><h2 class="inline"><span class="step">03</span>計算の設定（料率など）</h2></summary>
+            <div id="settings"></div>
+          </details>
+        </section>
+        <section class="card" data-page="settings">
+          <details id="transferDetails">
+            <summary><h2 class="inline"><span class="step">04</span>スマホアプリとのデータ連携</h2></summary>
+            <div id="transfer"></div>
+          </details>
+        </section>
+        <section class="card note" data-page="summary">
+          <h2>注意事項</h2>
+          <ul>
+            <li>このアプリは参考ツールです。実際の税額・保険料は、勤務先や市区町村、税務署の計算で決まります。</li>
+            <li>入力した内容は、お使いのブラウザの中（この端末）だけに保存され、外部には送信されません。「計算の設定」からすべての入力をリセットできます。</li>
+            <li id="yearSummary">年分ごとの税制で計算しています。</li>
+            <li>交通費は非課税（所得税・住民税の対象外）として扱い、社会保険料・雇用保険料と、扶養（130万円）の判定には含めます。106万円（月8.8万円）の判定は賞与・交通費を除いた月額で行います。</li>
+            <li>社会保険料は、賞与を除く給与＋交通費の月平均から標準報酬月額を求める簡易計算です（実際は4〜6月の平均で決まります）。賞与は標準賞与額（健保 年573万円・厚年 1回150万円が上限）で計算します。</li>
+            <li>公的年金は公的年金等控除・所得金額調整控除（給与と年金の両方がある場合）を反映し、扶養（60歳以上は180万円）の判定にも含めます。在職老齢年金は、支給停止調整額（1〜3月51万円・4〜12月65万円）と年間を通じて同じ給与の前提で計算します。</li>
+            <li>国民健康保険料・住民税は、登録済みの市区（東京23区・横浜・大阪・名古屋・札幌・京都・福岡・仙台）は令和8年度の料率、それ以外は仮の料率です。料率は「お住まいの地域」からいつでも編集できます。65歳以上の介護保険料（市区町村ごと）と後期高齢者医療の料率（都道府県ごと）は「計算の設定」で変更してください。</li>
+            <li>事業所得（青色申告特別控除・純損失の繰越控除）・個人事業税・消費税（2割特例・簡易課税・本則課税）・上場株式等（申告不要／申告分離課税／総合課税・繰越控除）・FX・先物・寄附金控除・雑損控除に対応しています。消費税は売上・仕入れを税込10%として計算し、軽減税率（8%）や個人事業税の業種の細かな区分、事業専従者控除などは含めていません。</li>
+          </ul>
+          <p class="hint site-foot">計算結果は目安です。入力内容はこの端末（ブラウザ）の中だけに保存され、外部に送信されません。<a href="./privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>・<a href="mailto:kimi13_hub@proton.me?subject=%E5%B9%B4%E5%8F%8E%E3%81%AE%E5%A3%81%E3%82%B7%E3%83%9F%E3%83%A5%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC%EF%BC%88Web%E7%89%88%EF%BC%89%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6">お問い合わせ</a></p>
+        </section>
+      </main>
+    </div>
+
+  </body>
+</html>
